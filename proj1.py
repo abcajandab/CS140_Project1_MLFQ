@@ -337,17 +337,17 @@ def main():
     # Process A
     A_CPUburst = [2, 6]
     A_IOburst = [2]
-    A = Process("A", 2, A_CPUburst, A_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1")
+    A = Process("A", 2, A_CPUburst, A_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0)
     
     # Process B
     B_CPUburst = [5,5,5]
     B_IOburst = [2,2]
-    B = Process("B", 0, B_CPUburst, B_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1")
+    B = Process("B", 0, B_CPUburst, B_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0)
 
     # Process C
     C_CPUburst = [30]
     C_IOburst = []
-    C = Process("C", 0, C_CPUburst, C_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1")
+    C = Process("C", 0, C_CPUburst, C_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0)
     
     # List of processes
     procList = []

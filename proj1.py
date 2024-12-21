@@ -37,9 +37,15 @@ def MLFQ(procList, contextSwitch):
     Q3list = []
     
     # List of processes currently in CPU or IO
-    prevCPU = ""
     CPU = ""
+    prevCPU = ""
+    demotedProc = ""
+    finishedProc = ""
     IOlist = []
+    newQueue = []
+    prevQueue = []
+    IOlistPrint = []
+    finalProcList = []
     arrivingProcs = []
     
     contextCounter = contextSwitch
@@ -48,11 +54,14 @@ def MLFQ(procList, contextSwitch):
     while(len(procList) > 0):
         # Check if the process to be run is the same as prev, if not do context switch
         currProc = currentProc(Q1list, Q2list, Q3list)
+        if currProc == None: CPU = ""
         if(prevCPU == currProc):
           contextSwitching = False
-
+          
+        addWaitTime(currProc, Q1list, Q2list, Q3list)
+        
         # Enqueue incoming processes
-        Q1list = enqueueIncoming(procList, time, Q1list, arrivingProcs) #Enqueue the newly arriving process.
+        Q1list = enqueueArriving(procList, time, Q1list, arrivingProcs)
           
         # CPU
         if(contextSwitching and contextSwitch > 0):
@@ -79,7 +88,7 @@ def MLFQ(procList, contextSwitch):
                     else:
                         currProc.level = "Q2"        # change level to Q2
                         
-                    IOlist = addIO(IOlist, currProc) # add current process if there are still IOburst
+                    addIO(IOlist, currProc)         # add current process if there are still IOburst
                     quantum = 4
                     contextSwitching = True
                 
@@ -89,7 +98,7 @@ def MLFQ(procList, contextSwitch):
                         Q1list.append(currProc)      # stay in queue (dequeue then enqueue)
                     else:
                         Q2list.append(currProc)      # move process to lower queue
-                    
+
                     quantum = 4
                     contextSwitching = True
                     
@@ -110,7 +119,7 @@ def MLFQ(procList, contextSwitch):
                     else:
                         currProc.level = "Q3"        # change level to Q3
                         
-                    IOlist = addIO(IOlist, currProc) # add current process if there are still IOburst
+                    addIO(IOlist, currProc) # add current process if there are still IOburst
                     contextSwitching = True
                 
                 elif(Q2list[0].Q2timeallot == 0):
@@ -129,57 +138,74 @@ def MLFQ(procList, contextSwitch):
                     currProc = Q3list.pop(0)
                     currProc.CPUburst.pop(0)         # remove 0 CPU burst time
                         
-                    IOlist = addIO(IOlist, currProc) # add current process if there are still IOburst
+                    addIO(IOlist, currProc) # add current process if there are still IOburst
                     contextSwitching = True
                     
                 prevCPU = CPU
         
-        # make a function to print this: (to make it cleaner)
-        printQueue = printQueues(Q1list, Q2list, Q3list)
-        print("At Time = ", time)                                           # At Time = 8
-        print(f"Queues : {printQueue[0]};{printQueue[1]};{printQueue[2]}")  # Queues : [B, C];[];[]
-        print("CPU : ", CPU, "\n")                                          # CPU : A
+        # Print the current status of CPU
+        newQueue = printQueues1(Q1list, Q2list, Q3list, CPU, IOlist)
+        printOutput(Q1list, Q2list, Q3list, time, CPU, IOlistPrint, arrivingProcs, finishedProc, demotedProc)
         
-        # I/O 
+        IOlistPrint = printIO(IOlist)
+        demotedProc = demotion(prevQueue, newQueue)
+        prevQueue = printQueues1(Q1list, Q2list, Q3list, CPU, IOlist)
+        finishedProc = ""
+
+        # I/O
+        to_remove_from_IO = []
         for proc in IOlist:
             proc.IOburst[0] -= 1
-            if(proc.IOburst[0] <= 0):
-                proc.IOburst.pop(0)    # remove the 0 IO burst
-                IOlist.remove(proc)    # remove from IO list
-                if(proc.level == "Q1" and proc.CPUburst):
+            if proc.IOburst[0] <= 0:
+                to_remove_from_IO.append(proc)  # mark for removal from IO list
+                if proc.level == "Q1" and proc.CPUburst:
                     Q1list.append(proc)
-                elif(proc.level == "Q2" and proc.CPUburst):
+                elif proc.level == "Q2" and proc.CPUburst:
                     Q2list.append(proc)
-                elif(proc.level == "Q3" and proc.CPUburst):
+                elif proc.level == "Q3" and proc.CPUburst:
                     Q3list.append(proc)
-                    sortQ3(Q3list)
+                    sort_Q3(Q3list)             # Ensure Q3 is sorted after adding new process
+      
+        # Remove processes in procList that has no more CPU or IO burst
+        finishedProc = removeProc(procList, finishedProc, finalProcList, time)
         
-        removeProc(procList)
-        time += 1
+        # Remove processes from IOlist after iteration
+        for proc in to_remove_from_IO:
+            proc.IOburst.pop(0)
+            IOlist.remove(proc)
             
-def enqueueIncoming(procList, time, Q1list, arrivingProcs):
+        arrivingProcs = []
+        time += 1
+    
+    print("SIMULATION DONE \n")
+    printTurnAroundTime(finalProcList)
+    printWaitingTime(finalProcList)
+        
+        
+# Enqueues arriving process
+def enqueueArriving(procList, time, Q1list, arrivingProcs):
     for proc in procList:
         if(proc.arrivaltime == time):
             Q1list.append(proc)
             arrivingProcs.append(proc.name)
     return Q1list
     
+# Remove process from procList (used to stop the main while loop)
+def removeProc(procList, finishedProc, finalProcList, time):
+    for proc in procList:
+        if(not proc.CPUburst and not proc.IOburst):
+            finishedProc = proc.name
+            proc.completionTime = time + 1
+            finalProcList.append(proc)
+            procList.remove(proc)
+    return finishedProc
+
+# Add process in the IO list is it still has IO bursts
 def addIO(IOlist, currProc):
     if(len(currProc.IOburst) > 0):
         IOlist.append(currProc)
-    return IOlist
-    
-def printQueues(Q1list, Q2list, Q3list):
-  Q1 = [x.name for x in Q1list]
-  Q2 = [x.name for x in Q2list]
-  Q3 = [x.name for x in Q3list]
-  return [Q1, Q2, Q3]
 
-def removeProc(procList):
-    for proc in procList:
-        if(not proc.CPUburst and not proc.IOburst):
-            procList.remove(proc)
-
+# Returns the process that will run the CPU 
 def currentProc(Q1list, Q2list, Q3list):
     for proc in Q1list:
         return proc.name
@@ -188,10 +214,90 @@ def currentProc(Q1list, Q2list, Q3list):
     for proc in Q3list:
         return proc.name
     return None
-      
+
+# Sorts Q3 by their CPU burst
 def sortQ3(Q3list):
     Q3list.sort(key=lambda proc: proc.CPUburst[0] if proc.CPUburst else float('inf'))
 
+# Returns names of active processes in queues
+def printQueues(Q1list, Q2list, Q3list, CPU, IOlistPrint):
+  Q1 = [x.name for x in Q1list if x.name != CPU and x.name not in IOlistPrint]
+  Q2 = [x.name for x in Q2list if x.name != CPU and x.name not in IOlistPrint]
+  Q3 = [x.name for x in Q3list if x.name != CPU and x.name not in IOlistPrint]
+  return [Q1, Q2, Q3]
+
+# Similar to the above function (no need to include in documentation)
+def printQueues1(Q1list, Q2list, Q3list, CPU, IOlistPrint):
+  Q1 = [x.name for x in Q1list if x.name not in IOlistPrint]
+  Q2 = [x.name for x in Q2list if x.name not in IOlistPrint]
+  Q3 = [x.name for x in Q3list if x.name not in IOlistPrint]
+  return [Q1, Q2, Q3]
+
+# Returns processes currently in IO
+def printIO(IOlist):
+  return [proc.name for proc in IOlist]
+
+# Prints necessary output per time step
+def printOutput(Q1list, Q2list, Q3list, time, CPU, IOlist, arrivingProcs, finishedProc, demotedProc):
+  printQueue = printQueues(Q1list, Q2list, Q3list, CPU, IOlist)
+  print("At Time = ", time)                                           # Time
+  
+  if len(arrivingProcs) > 0 : print("Arriving : ", arrivingProcs)     # Arriving processes
+  if finishedProc != "" : print(finishedProc, " DONE")
+  
+  print(f"Queues : {printQueue[0]};{printQueue[1]};{printQueue[2]}")  # Queues
+  print("CPU : ", CPU)                                                # Current process using CPU
+  
+  if len(IOlist) > 0 : print("IO : ", IOlist)
+  if demotedProc != "" : print(demotedProc, "DEMOTED")
+  
+  print()
+  
+# Returns demoted process
+def demotion(prevQueue, newQueue):
+    demotions = ""
+    if len(prevQueue) == 0 : return demotions
+    
+    prevQ1, prevQ2, prevQ3 = prevQueue
+    newQ1, newQ2, newQ3 = newQueue
+    # Check for demotions from Q1 to Q2
+    for proc in prevQ1:
+        if proc in newQ2:
+            demotions = proc
+    # Check for demotions from Q2 to Q3
+    for proc in prevQ2:
+        if proc in newQ3:
+            demotions = proc
+
+    return demotions
+
+# Adds wait time to every process waiting in the queue
+def addWaitTime(currproc, Q1list, Q2list, Q3list):
+  for proc in Q1list:
+    if currproc != proc.name : proc.waitingTime += 1
+  for proc in Q2list:
+    if currproc != proc.name : proc.waitingTime += 1
+  for proc in Q3list:
+    if currproc != proc.name : proc.waitingTime += 1
+
+# Prints turnaround time of each process and their average
+def printTurnAroundTime(finalProcList):
+  finalProcList.sort(key=lambda p: p.name)
+  total = 0
+    
+  for proc in finalProcList:
+    turnAround = proc.completionTime - proc.arrivaltime
+    total += turnAround
+    print(f"Turn-around time for Process {proc.name} : {proc.completionTime} - {proc.arrivaltime} = {turnAround} ms")
+      
+  avgTurnAround = total/len(finalProcList)
+  print(f"Average Turn-around time = {avgTurnAround} ms")
+    
+# Prints waiting time for each process
+def printWaitingTime(finalProcList):
+  finalProcList.sort(key=lambda p: p.name)
+  for proc in finalProcList:
+    print(f"Waiting time for Process {proc.name} : {proc.waitingTime} ms")
 
 
 

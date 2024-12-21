@@ -27,7 +27,7 @@ class Process:
 
 
         
-def MLFQ(procList, contextSwitch):
+def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
     # Global time
     time = 0
     
@@ -49,14 +49,14 @@ def MLFQ(procList, contextSwitch):
     arrivingProcs = []
     
     contextCounter = contextSwitch
-    contextSwitching = False
+    isContextSwitching = False
     quantum = 4
     while(len(procList) > 0):
         # Check if the process to be run is the same as prev, if not do context switch
         currProc = currentProc(Q1list, Q2list, Q3list)
         if currProc == None: CPU = ""
         if(prevCPU == currProc):
-          contextSwitching = False
+          isContextSwitching = False
           
         addWaitTime(currProc, Q1list, Q2list, Q3list)
         
@@ -64,12 +64,12 @@ def MLFQ(procList, contextSwitch):
         Q1list = enqueueArriving(procList, time, Q1list, arrivingProcs)
           
         # CPU
-        if(contextSwitching and contextSwitch > 0):
+        if(isContextSwitching and contextSwitch > 0):
             CPU = "Context Switching"
             contextCounter -= 1
             if(contextCounter == 0):
                 contextCounter = contextSwitch
-                contextSwitching = False
+                isContextSwitching = False
             pass
         else:
             # Q1 (Top Priority Queue): Round Robin Scheduling - 4 ms quantum
@@ -83,14 +83,14 @@ def MLFQ(procList, contextSwitch):
                     currProc = Q1list.pop(0)
                     currProc.CPUburst.pop(0)         # remove 0 CPU burst time
                     if(currProc.Q1timeallot > 0):
-                        currProc.Q1timeallot = 8     # renew Q1 time allotment
+                        currProc.Q1timeallot = timeAllotmentQ1     # renew Q1 time allotment
                         currProc.level = "Q1"
                     else:
                         currProc.level = "Q2"        # change level to Q2
                         
                     addIO(IOlist, currProc)         # add current process if there are still IOburst
                     quantum = 4
-                    contextSwitching = True
+                    isContextSwitching = True
                 
                 elif(quantum == 0):
                     currProc = Q1list.pop(0)
@@ -100,7 +100,7 @@ def MLFQ(procList, contextSwitch):
                         Q2list.append(currProc)      # move process to lower queue
 
                     quantum = 4
-                    contextSwitching = True
+                    isContextSwitching = True
                     
                 prevCPU = CPU
                     
@@ -114,13 +114,13 @@ def MLFQ(procList, contextSwitch):
                     currProc = Q2list.pop(0)
                     currProc.CPUburst.pop(0)         # remove 0 CPU burst time
                     if(currProc.Q2timeallot > 0):
-                        currProc.Q2timeallot = 8     # renew Q2 time allotment
+                        currProc.Q2timeallot = timeAllotmentQ2     # renew Q2 time allotment
                         currProc.level = "Q2"
                     else:
                         currProc.level = "Q3"        # change level to Q3
                         
                     addIO(IOlist, currProc) # add current process if there are still IOburst
-                    contextSwitching = True
+                    isContextSwitching = True
                 
                 elif(Q2list[0].Q2timeallot == 0):
                     currProc = Q2list.pop(0)
@@ -139,7 +139,7 @@ def MLFQ(procList, contextSwitch):
                     currProc.CPUburst.pop(0)         # remove 0 CPU burst time
                         
                     addIO(IOlist, currProc) # add current process if there are still IOburst
-                    contextSwitching = True
+                    isContextSwitching = True
                     
                 prevCPU = CPU
         
@@ -362,7 +362,7 @@ def main():
          print("-" * 40)
     
     
-    MLFQ(procList, contextSwitch)
+    MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2)
     
 if __name__ == "__main__":
     main()

@@ -6,7 +6,7 @@
 
 
 class Process:
-    def __init__(self, name, arrivaltime, CPUburst, IOburst, Q1timeallot, Q2timeallot, level):
+    def __init__(self, name, arrivaltime, CPUburst, IOburst, Q1timeallot, Q2timeallot, level, completionTime, waitingTime):
         self.name = name
         self.arrivaltime = arrivaltime
         self.CPUburst = CPUburst
@@ -14,6 +14,8 @@ class Process:
         self.Q1timeallot = Q1timeallot
         self.Q2timeallot = Q2timeallot
         self.level = level
+        self.completionTime = completionTime
+        self.waitingTime = waitingTime
 
     ## For printing to check    
     def __str__(self):

@@ -69,18 +69,14 @@ def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
                 to_remove_from_IO.append(proc)  # mark for removal from IO list
                 enqueueIOList.append(proc)
         
-        # Remove processes from IOlist after iteration
         for proc in to_remove_from_IO:
             proc.IOburst.pop(0)
             IOlist.remove(proc)
         ### IO
         
-        
-        addWaitTime(currProc, Q1list, Q2list, Q3list)
-        
         # Enqueue incoming processes
         Q1list = enqueueArriving(procList, time, Q1list, arrivingProcs)
-          
+
         # CPU
         if(isContextSwitching and contextSwitch > 0):
             CPU = ""
@@ -160,17 +156,22 @@ def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
                     isContextSwitching = True
                     
                 prevCPU = CPU
-        
+    
         # Print the current status of CPU
         newQueue = printQueues1(Q1list, Q2list, Q3list, CPU, IOlist)
         printOutput(Q1list, Q2list, Q3list, time, CPU, IOlistPrint, arrivingProcs, finishedProc, demotedProc)
         
+        # Increments wait time of ready processes in queues
+        readyProcs = printQueues(Q1list, Q2list, Q3list, CPU, IOlist)
+        addWaitTime(readyProcs, procList)
+        
+        copyIOList = IOlistPrint
         IOlistPrint = printIO(IOlist)
         demotedProc = demotion(prevQueue, newQueue)
         prevQueue = printQueues1(Q1list, Q2list, Q3list, CPU, IOlist)
         finishedProc = ""
         
-        # I/O
+        # Enqueueing of processes after IO
         for proc in enqueueIOList:
             if proc.level == "Q1" and proc.CPUburst:
                 Q1list.append(proc)
@@ -185,8 +186,8 @@ def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
         
         arrivingProcs = []
         time += 1
-        
-        
+    
+    printFinalLoop(time, CPU, copyIOList)
     print("SIMULATION DONE \n")
     printTurnAroundTime(finalProcList)
     printWaitingTime(finalProcList)
@@ -281,14 +282,18 @@ def demotion(prevQueue, newQueue):
 
     return demotions
 
-# Adds wait time to every process waiting in the queue
-def addWaitTime(currproc, Q1list, Q2list, Q3list):
-  for proc in Q1list:
-    if currproc != proc.name : proc.waitingTime += 1
-  for proc in Q2list:
-    if currproc != proc.name : proc.waitingTime += 1
-  for proc in Q3list:
-    if currproc != proc.name : proc.waitingTime += 1
+def addWaitTime(readyProcs, procList):
+  for proc in procList:
+    for queues in readyProcs:
+      for p in queues:
+        if proc.name == p:
+          proc.waitingTime += 1
+
+def printFinalLoop(time, CPU, copyIOList):
+  print(f"At Time = {time}")
+  print(CPU or copyIOList[0], "DONE")
+  print("Queues : [];[];[]")
+  print("CPU :  ", "\n")
 
 # Prints turnaround time of each process and their average
 def printTurnAroundTime(finalProcList):
@@ -308,7 +313,7 @@ def printWaitingTime(finalProcList):
   finalProcList.sort(key=lambda p: p.name)
   for proc in finalProcList:
     print(f"Waiting time for Process {proc.name} : {proc.waitingTime} ms")
-
+    
 
 
 def main(): 

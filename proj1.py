@@ -59,7 +59,23 @@ def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
         if currProc == None: CPU = ""
         if(prevCPU == currProc):
           isContextSwitching = False
-          
+        
+        ### IO
+        enqueueIOList = []
+        to_remove_from_IO = []
+        for proc in IOlist:
+            proc.IOburst[0] -= 1
+            if proc.IOburst[0] <= 0:
+                to_remove_from_IO.append(proc)  # mark for removal from IO list
+                enqueueIOList.append(proc)
+        
+        # Remove processes from IOlist after iteration
+        for proc in to_remove_from_IO:
+            proc.IOburst.pop(0)
+            IOlist.remove(proc)
+        ### IO
+        
+        
         addWaitTime(currProc, Q1list, Q2list, Q3list)
         
         # Enqueue incoming processes
@@ -67,7 +83,7 @@ def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
           
         # CPU
         if(isContextSwitching and contextSwitch > 0):
-            CPU = "Context Switching"
+            CPU = ""
             contextCounter -= 1
             if(contextCounter == 0):
                 contextCounter = contextSwitch
@@ -153,32 +169,24 @@ def MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2):
         demotedProc = demotion(prevQueue, newQueue)
         prevQueue = printQueues1(Q1list, Q2list, Q3list, CPU, IOlist)
         finishedProc = ""
-
+        
         # I/O
-        to_remove_from_IO = []
-        for proc in IOlist:
-            proc.IOburst[0] -= 1
-            if proc.IOburst[0] <= 0:
-                to_remove_from_IO.append(proc)  # mark for removal from IO list
-                if proc.level == "Q1" and proc.CPUburst:
-                    Q1list.append(proc)
-                elif proc.level == "Q2" and proc.CPUburst:
-                    Q2list.append(proc)
-                elif proc.level == "Q3" and proc.CPUburst:
-                    Q3list.append(proc)
-                    sort_Q3(Q3list)             # Ensure Q3 is sorted after adding new process
-      
+        for proc in enqueueIOList:
+            if proc.level == "Q1" and proc.CPUburst:
+                Q1list.append(proc)
+            elif proc.level == "Q2" and proc.CPUburst:
+                Q2list.append(proc)
+            elif proc.level == "Q3" and proc.CPUburst:
+                Q3list.append(proc)
+                sort_Q3(Q3list)             # Ensure Q3 is sorted after adding new process
+        
         # Remove processes in procList that has no more CPU or IO burst
         finishedProc = removeProc(procList, finishedProc, finalProcList, time)
         
-        # Remove processes from IOlist after iteration
-        for proc in to_remove_from_IO:
-            proc.IOburst.pop(0)
-            IOlist.remove(proc)
-            
         arrivingProcs = []
         time += 1
-    
+        
+        
     print("SIMULATION DONE \n")
     printTurnAroundTime(finalProcList)
     printWaitingTime(finalProcList)

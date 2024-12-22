@@ -303,65 +303,35 @@ def printWaitingTime(finalProcList):
 
 
 
-def main():
-
-    ##this works na for parsing! commented out rn bc its easier to check with the hardcoded details
+def main(): 
+    print("# Enter Scheduler Details #")
+    num_processes = int(input())
+    timeAllotmentQ1 = int(input())
+    timeAllotmentQ2 = int(input())
+    contextSwitch = int(input())
     
-##    print("# Enter Scheduler Details #")
-##    num_processes = int(input())
-##    timeAllotmentQ1 = int(input())
-##    timeAllotmentQ2 = int(input())
-##    contextSwitch = int(input())
-##    
-##    print(f"# Enter {num_processes} Process Details #")
-##    procList = []
-##
-##    for i in range(num_processes):
-##        process_info = input().split(";")
-##        process_name = process_info[0]
-##        arrival_time = int(process_info[1])
-##        CPUburst = []
-##        IOburst = []
-##        for i in range(2, len(process_info)):
-##            if i % 2 == 0:
-##                CPUburst.append(int(process_info[i]))
-##            else:
-##                IOburst.append(int(process_info[i]))
-##        procList.append(Process(process_name, arrival_time, CPUburst, IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1" ))
-
-    
-    timeAllotmentQ1 = 8
-    timeAllotmentQ2 = 8
-    contextSwitch = 0
-    
-    # Process A
-    A_CPUburst = [2, 6]
-    A_IOburst = [2]
-    A = Process("A", 2, A_CPUburst, A_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0)
-    
-    # Process B
-    B_CPUburst = [5,5,5]
-    B_IOburst = [2,2]
-    B = Process("B", 0, B_CPUburst, B_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0)
-
-    # Process C
-    C_CPUburst = [30]
-    C_IOburst = []
-    C = Process("C", 0, C_CPUburst, C_IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0)
-    
-    # List of processes
+    print(f"# Enter {num_processes} Process Details #")
     procList = []
-    
-    procList.append(A)
-    procList.append(B)
-    procList.append(C)
+
+    for i in range(num_processes):
+      process_info = input().split(";")
+      process_name = process_info[0]
+      arrival_time = int(process_info[1])
+      CPUburst = []
+      IOburst = []
+      for i in range(2, len(process_info)):
+        if i % 2 == 0:
+          CPUburst.append(int(process_info[i]))
+        else:
+          IOburst.append(int(process_info[i]))
+      procList.append(Process(process_name, arrival_time, CPUburst, IOburst, timeAllotmentQ1, timeAllotmentQ2, "Q1", 0, 0))
 
 
     #Print proccesses (for checking)
     print("Processes in procList:")
     for process in procList:
-         print(process)
-         print("-" * 40)
+      print(process)
+      print("-" * 40)
     
     
     MLFQ(procList, contextSwitch, timeAllotmentQ1, timeAllotmentQ2)
